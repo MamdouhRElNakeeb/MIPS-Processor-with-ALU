@@ -1,0 +1,21 @@
+{C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v} {0 {vlog -work work -stats=none {C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v}
+Model Technology ModelSim PE Student Edition vlog 10.4a Compiler 2015.03 Apr  7 2015
+-- Compiling module Register
+-- Compiling module ALU
+-- Compiling module mux
+** Error: C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v(123): (vlog-2110) Illegal reference to net "z".
+
+** Error: C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v(128): (vlog-2110) Illegal reference to net "z".
+
+** Error: C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v(133): (vlog-2110) Illegal reference to net "z".
+
+-- Compiling module testReg
+-- Compiling module tb
+** Warning: C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v(204): (vlog-2597) '4000000000' is being treated as 32-bit signed integer and will overflow.
+
+** Warning: C:/Users/El Nakeeb/Desktop/ASU/CSE/MIPS_Project/main.v(205): (vlog-2597) '4000000000' is being treated as 32-bit signed integer and will overflow.
+
+-- Compiling module MuxTest
+-- Compiling module final
+
+} {6.0 7.0 8.0 9.0 10.0 11.0} {}}

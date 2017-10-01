@@ -1,0 +1,5 @@
+module main(output o, input in1, input in2);
+
+assign o = in1 & in2;
+
+endmodule

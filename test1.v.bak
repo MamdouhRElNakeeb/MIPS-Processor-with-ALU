@@ -1,0 +1,383 @@
+
+/*
+	edited by :
+		Mina Mourice ;
+		Mahmoud Hamdy ;
+*/
+
+
+module main(input [31:0]wd,mux_ctrl,[4:0]write_reg,[4:0]read_reg1,[4:0]read_reg2,clk,[3:0]op,[4:0]shift_amount,write_enable,output [0:31]result);
+wire mux_writedata;
+wire [31:0]reg_out1;
+wire[31:0] reg_out2;
+reg[31:0]MyMemory[31:0] ;
+
+register r1 (read_reg1,read_reg2,write_reg,wd,reg_out1,reg_out2,mux_ctrl,clk,write_enable);
+
+alu a1 (reg_out1,reg_out2,op,result,shift_amount) ;
+
+always @ (posedge clk) 
+	if (mux_ctrl == 0)
+	begin
+		MyMemory[write_reg]=wd ;
+	end
+	
+	else if(mux_ctrl == 1)
+	begin
+		MyMemory[write_reg]=result ;
+	end
+endmodule
+
+
+
+//create alu with four
+
+
+//create reg with four with data memory
+
+/*
+read Reg 1 ->a
+read Reg 2 ->b
+write Reg  ->c
+write data ->d
+x ->read data1
+y ->read data2
+
+*/
+module register (a,b,c,d,x,y,sel,clk,write_enable); 
+	input [4:0] a, b, c;
+	input [31:0] d; 
+	input [2:0] sel; 
+	input clk,write_enable;
+	output reg[31:0] x, y; 
+	reg[31:0]MyMemory[31:0] ;
+	reg i ;
+	/*for (i=0;i<32;i=i+1)begin
+	MyMemory[i]=i;
+	end*/
+	 //MyMemory[0]=0;
+	initial
+	begin
+		for(i=0;i<31;i=i+1)
+			begin
+                         MyMemory[i]<=i;
+			
+                 end
+	end
+	
+	//read operation all time
+	always @ (a or b) 
+     	begin
+
+		//$readmemb("F:\FilesForVerilog\MyMemoryFile.txt",MyMemory);
+		x=MyMemory[a];
+		y=MyMemory[b];
+	end 
+	
+	//write every cycle
+	//always @ (posedge clk) 
+	/*if (sel == 0)
+	begin
+		WriteToMemory(d) ;
+	end
+	
+	else if(sel == 1)
+	begin
+		writeToMemory()
+	end*/
+	//writeToMemory g1 ;
+ endmodule
+/*
+if(a[31]==b[31] && result[31] == ~a[31])
+flag =1 ;*/
+
+module alu (a,b,op,y,shift_amount); 
+	input[31:0] a, b; 
+	input [3:0] op; 
+	input [4:0] shift_amount; 
+	output reg[31:0] y; 
+
+	always @ (a or b or op) 
+
+
+	if (op == 0)
+	begin
+ 	y <= a+b;
+ 	end 
+	else if (op == 1) 
+	begin
+		if(a>b)begin
+		y <= a-b;end
+		else begin
+		y <= b-a;end
+	end 
+	else if (op == 2) 
+	begin
+	y = a&b;
+	end
+	else if (op == 3) 
+	begin
+	y = a|b;
+	end 
+	else if (op == 4) 
+	begin
+	y = a<<shift_amount;
+	end 
+	else if (op == 5) 
+	begin
+	y = a>>shift_amount;
+	end 
+	else if (op == 6) 
+	begin
+	y = a>>>shift_amount;
+	end 
+	else if (op == 7) 
+	begin
+		if(a>=b)
+		begin y = a;end
+		else if(b>a)
+		begin y = b;end
+	end 
+	else if (op == 8) 
+	begin
+		if(a>=b)
+		begin y = b;end
+		else if(b>a)
+		begin y = a;end
+	end 
+
+	
+ 
+
+     
+ endmodule
+
+//alu finish
+
+
+
+/*
+
+// create mux 2 to 1
+module mux2to1 (a,b,sel,y); 
+	input [31:0] a, b; 
+	input  sel; 
+	output reg y; 
+
+	always @ (a or b  or sel) 
+	case (sel) 
+		0 : y = a; 
+		1 : y = b; 
+
+ 
+		default : $display("Error in SEL"); 
+	 endcase 
+     
+ endmodule
+*/
+
+
+
+
+
+//create Write operation every clock
+module WriteToMemory ;
+//input reg[31:0]A[0:199];
+reg [7:0] i;
+integer file ;
+
+initial
+begin
+
+	i=0;
+	file = $fopen("E:\FilesForVerilog/MyMemoryFile.txt");
+	$fmonitor(file,"%b // %d \n",i,i);
+	for(i=0;i<200;i=i+1)
+	begin
+		#1
+		i=i+1;
+	end
+
+end
+
+
+
+endmodule
+
+
+
+// read without delay
+
+module ReadFromMemoryFile;
+
+reg[7:0]MyMemory [0:199];
+
+initial
+begin
+
+$readmemb("F:\FilesForVerilog\MyMemoryFile.txt",MyMemory);
+
+#1
+
+$display("%b",MyMemory[40]);
+
+
+end
+endmodule
+
+/*
+read Reg 1 ->a
+read Reg 2 ->b
+write Reg  ->c
+write data ->d
+x ->read data1
+y ->read data2
+sel ->mux ctrl
+
+*/
+
+//create test bench
+module TestModule_register ;
+	reg[4:0] a, b, c;
+	reg[31:0] d; 
+	reg[2:0] sel; 
+	reg clk,write_enable;
+	wire [31:0] x, y; 
+initial
+begin
+$monitor("read Reg 1=%b , read Reg 2=%b , write Reg=%b , write data = %b , read data1=%b , read data2=%b , mux_ctrl = %b , clk=%b  , write_Enable =%b   ",a,b,c,d,x,y,sel,clk,write_enable);
+
+#10
+a=5'b101;
+b=5'b100;
+c=1;
+d=20;
+sel=1;
+
+write_enable=1;
+
+#10
+a=2;
+b=10;
+c=3;
+d=2;
+sel=0;
+
+write_enable=0;
+
+#10
+a=4;
+b=6;
+c=8;
+d=10;
+sel=0;
+
+write_enable=1;
+
+
+end
+
+
+register g1 (a,b,c,d,x,y,sel,clk,write_enable);
+
+
+endmodule
+
+//create test bench
+module TestModule_Alu ;
+reg A,B,C;
+wire rd1,rd2 ;
+
+initial
+begin
+$monitor("in1=%b , in2=%b , out=%b",A,B,C);
+
+#10
+A=0;
+B=0;
+C=1;
+
+#10
+A=1;
+B=1;
+C=1;
+
+#10
+A=0;
+B=1;
+C=0;
+
+
+end
+
+
+register g2 (A,B,C);
+
+
+endmodule
+
+
+
+
+
+//create test bench
+module test_main;
+reg [31:0]wd;
+reg [4:0]write_reg;
+reg[4:0]read_reg1;
+reg[4:0]read_reg2;
+reg[3:0]op;
+reg shift_out;
+reg write_Enable,mux_ctrl,clk=0;
+wire [31:0]result;
+wire mux_writedata,reg_out1,reg_out2;
+
+initial
+begin
+$monitor("wd =%b , mux_ctrl=%b , write_reg=%b , read_reg1 = %b , read_reg2=%b , clk=%b , op = %b , shift_out=%b  , write_Enable =%b   ",wd,mux_ctrl,write_reg,read_reg1,read_reg2,clk,op,shift_out,write_Enable);
+
+#10
+wd=5;
+mux_ctrl=1;
+write_reg=1;
+read_reg1=20;
+read_reg2=1;
+
+op=3;
+shift_out=1;
+write_Enable=1;
+
+
+#10
+wd=5;
+mux_ctrl=1;
+write_reg=1;
+read_reg1=20;
+read_reg2=1;
+
+op=3;
+shift_out=1;
+write_Enable=1;
+
+
+
+#10
+wd=5;
+mux_ctrl=1;
+write_reg=1;
+read_reg1=20;
+read_reg2=1;
+
+op=3;
+shift_out=1;
+write_Enable=1;
+
+
+
+end
+main m1(wd,mux_ctrl,write_reg,read_reg1,read_reg2,clk,op,shift_amount,write_enable,result);
+always 
+#10 clk=~clk;
+
+
+endmodule
