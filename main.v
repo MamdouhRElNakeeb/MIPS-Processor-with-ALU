@@ -1,13 +1,13 @@
 // Register module
 module Register(read1, read2, data, clk, wrtEn, wrtAdd, out1, out2);
 
-output wire [31:0] out1, out2;
+output signed [31:0] out1, out2;
 
-reg [31:0] index [31:0];
+reg signed [31:0] index [31:0];
 
 input clk, wrtEn;
 
-input [31:0] data;
+input signed [31:0] data;
 
 input [4:0] read1, read2;
 input [4:0] wrtAdd;
@@ -38,16 +38,16 @@ endmodule
 // ALU Register
 module ALU (Result, overflow, lessthan, A, B, shft, op);
 
-output wire [31:0] Result;
-output wire overflow;
-output wire lessthan;
+output signed [31:0] Result;
+output overflow;
+output lessthan;
 
-input wire [31:0] A, B;
-input wire [3:0] op;
-input wire [4:0] shft;
+input signed [31:0] A, B;
+input [3:0] op;
+input [4:0] shft;
 //input mode;
 
-wire [31:0] B_negated;
+wire signed [31:0] B_negated;
 
 assign B_negated = - B;
 
@@ -70,10 +70,12 @@ assign Result = (op == 4'b0000)? (A + B):
 (op == 4'b0100)? (A<<shft) : 
 (op == 4'b0101)? (A>>shft) : 
 (op == 4'b0110)? $signed(($signed(A)>>>shft)) : 
-A;
+(op == 4'b0111)? (A>B)? A : B : 
+(op == 4'b1000)? ((A<B)? B : A) :
+1'bx;
 
-assign lessthan = (op == 4'b0111)? (A>B)? 1'b0 : 1'b1 : 
-(op == 4'b1000)? ((A<B)? (1'b1) : (1'b0)) :
+assign lessthan = (op == 4'b0111)? (A>B)? A : B : 
+(op == 4'b1000)? ((A<B)? B : A) :
 1'bx;
 
 //A[31]==B[31] && A[31] != Result[31]; //+
@@ -89,12 +91,10 @@ if ((op == 4'b0000 && A>=0 && B>=0 && Result<0) || (op == 4'b0000 && A<0 && B<0 
 begin
 overflow = 1'b1;
 end
-
 else if ((op == 4'b0001 && A>=0 && B<0 && Result<0) || (op == 4'b0001 && A>0 && B>=0 && Result>=0))
 begin
 overflow = 1'b1;
 end
-
 else
 begin
 overflow = 1'b0;
@@ -111,30 +111,28 @@ assign z = (~sel * ~y * x) + (~sel * y * x) + (sel * y * ~x)
 + (sel * y * x);
 */
 
-output wire [31:0] z;
-input [31:0] x, y;
+output signed [31:0] z;
+input signed [31:0] x, y;
 input sel;
 
+assign z = (sel == 0)? x: y;
+/*
 always@(x or y or sel)
 begin
-
 if (sel == 0)
 begin
 z = x;
 end
-
 else if (sel == 1)
 begin
 z = y;
 end
-
 else
 begin
 z = 1'bx;
 end
-
 end
-
+*/
 endmodule
 
 // Register test module
@@ -205,7 +203,7 @@ A<=4000000000;
 B<=4000000000;
 op = 4'b0000;
 
-$monitor ("OP = %b, A = %b, B = %b, Result = %b, Overflow = %b, Lessthan = %b", op, A, B, Result, overflow, lessthan);
+$monitor ("op = %b, A = %b, B = %b, Result = %b, Overflow = %b, Lessthan = %b", op, A, B, Result, overflow, lessthan);
 
 #5 
 // 6 + 7
@@ -276,47 +274,114 @@ module final();
 
 reg clk, wrtEn;
 
-reg [31:0] data;
+reg signed [31:0] data;
 
 reg [4:0] read1, read2;
 reg [4:0] wrtAdd;
 
-reg MUX_Input1, MUX_Sel;
-wire MUX_Result;
+reg signed [31:0] MUX_Input1;
+reg MUX_Sel;
+wire signed [31:0] MUX_Result;
 
-reg [31:0] RegOut1, RegOut2;
+wire signed [31:0] RegOut1, RegOut2;
 reg [3:0] op;
 reg [4:0] shft;
 
-reg [31:0] ALU_Result;
+wire signed [31:0] ALU_Result;
 wire overflow;
 wire lessthan;
 
-mux mux1(MUX_Result, MUX_Input1, ALU_Result, MUX_Sel);
-Register reg1(read1, read2, MUX_Result, clk, wrtEn, wrtAdd, RegOut1, RegOut2);
-ALU alu(ALU_Result, overflow, lessthan, RegOut1, RegOut2, shft, op);
+
+always 
+begin
+#2 clk = ~clk;
+end
 
 initial
 begin
 
-//$monitor("RegWrite -- Data= %b, Address= %b", MUX_Result, wrtAdd);
+#10
+clk = 1;
+MUX_Sel <= 0;
+wrtEn <= 1;
+wrtAdd <= 2; MUX_Input1 <= 4;
+wrtAdd <= 4; MUX_Input1 <= 8;
+wrtAdd <= 5; MUX_Input1 <= 10;
+wrtAdd <= 6; MUX_Input1 <= 12;
+wrtAdd <= 10; MUX_Input1 <= -20;
+
+#5 wrtAdd <= 2; MUX_Input1 <= 4;
+$monitor("Write Address: %b  , Value = %d",wrtAdd, MUX_Input1);
+
+#5 read1<=2;
+$monitor("Read Address: %b  , Value = %d",read1, RegOut1);
+
+#5 op<=0;read1<=5;read2<=6;
+$monitor("%d + %d = %d",RegOut1, RegOut2, ALU_Result);
+
+#5 op<=1;read1<=6;read2<=5;
+$monitor("%d - %d = %d",RegOut1,RegOut2,ALU_Result);
+
+#5 op<=2;read1<=6;read2<=7;
+$monitor("%d & %d = %d",RegOut1,RegOut2,ALU_Result);
+
+#5 op<=3;read1<=7;read2<=6;
+$monitor("%d | %d = %d",RegOut1,RegOut2,ALU_Result);
+
+#5 op<=4;read1<=7;shft<=1;
+$monitor("%d shiftLeft %d",RegOut1,ALU_Result);
+
+#5 op<=5;read1<=8;
+$monitor("%d shiftRight %d",RegOut1,ALU_Result);
+
+#5 op<=6;read1<=10;
+$monitor("%d shiftRightA r %d",RegOut1,ALU_Result);
+
+#5 op<=7;read1<=10;read2<=9;
+$monitor("%d > %d = %d",RegOut1,RegOut2,ALU_Result);
+
+#5 op<=8;read1<=5;read2<=9;
+$monitor("%d < %d = %d",RegOut1,RegOut2,ALU_Result);
+
+end
+
+/*
+$monitor("RegWrite -- Data= %b, Address= %b", MUX_Result, wrtAdd);
 #10
 clk = 1;
 wrtEn = 1;
 wrtAdd = 1;
 MUX_Input1 = 3;
 MUX_Sel = 0;
-
 #10
 wrtAdd = 2;
 MUX_Input1 = 6;
 MUX_Sel = 0;
-
-
-//$monitor("Read1= %b, Read2= %b, RegOut1= %b, RegOut2= %b", read1, read2, RegOut1, RegOut2);
+#10
+read1<=1;
+read2<=2;
+$monitor("Read1= %b, Read2= %b, RegOut1= %b, RegOut2= %b", read1, read2, RegOut1, RegOut2);
 #10
 read1<=1;
 read2<=2;
 end
+*/
+mux mux1(MUX_Result, MUX_Input1, ALU_Result, MUX_Sel);
+Register reg1(read1, 
+read2, 
+MUX_Result, 
+clk, 
+wrtEn, 
+wrtAdd, 
+RegOut1, 
+RegOut2);
+
+ALU alu(ALU_Result, 
+overflow, 
+lessthan, 
+RegOut1, 
+RegOut2, 
+shft, 
+op);
 
 endmodule
